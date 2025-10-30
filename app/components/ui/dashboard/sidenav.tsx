@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Compass, MessageCircle, Settings, Heart, Power } from "lucide-react";
+import { Compass, MessageCircle, Settings, Heart, Power, ThumbsUp } from "lucide-react";
 
 const navigation = [
   { title: "Discover", icon: Compass, href: "/discover" },
+  { title: "Likes", icon: ThumbsUp, href: "/liked-me" }, // Changed icon to ThumbsUp
   { title: "Matches", icon: Heart, href: "/matches" },
   { title: "Chat", icon: MessageCircle, href: "/chat" },
   { title: "Settings", icon: Settings, href: "/settings" },

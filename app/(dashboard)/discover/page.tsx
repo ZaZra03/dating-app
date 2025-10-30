@@ -4,97 +4,142 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import {
-  Heart,
-  X,
-  Sparkles,
-} from "lucide-react";
+import { Heart, X, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { withAuth } from "@/lib/withAuth";
-
-const mockProfiles = [
-  {
-    id: 1,
-    name: "Alex",
-    age: 26,
-    bio: "Coffee enthusiast ☕ | Love hiking and live music 🎵",
-    photo:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-  },
-  {
-    id: 2,
-    name: "Jordan",
-    age: 24,
-    bio: "Artist 🎨 | Looking for genuine connections and fun conversations",
-    photo:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
-  },
-  {
-    id: 3,
-    name: "Taylor",
-    age: 28,
-    bio: "Foodie and travel lover 🌍 | Always up for adventures",
-    photo:
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop",
-  },
-  {
-    id: 4,
-    name: "Casey",
-    age: 25,
-    bio: "Dog mom 🐕 | Yoga instructor | Sunset chaser 🌅",
-    photo:
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
-  },
-];
+import { motion, useAnimation } from "framer-motion";
 
 const Discover = () => {
   const router = useRouter();
   const { toast } = useToast();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentProfile, setCurrentProfile] = useState<any | null>(null);
+  const [pending, setPending] = useState(false);
+  const [done, setDone] = useState(false);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
   const [ageRange, setAgeRange] = useState([18]);
   const [distance, setDistance] = useState([50]);
+  const [generalIndex, setGeneralIndex] = useState(1);
+  const controls = useAnimation();
 
-  const currentProfile = mockProfiles[currentIndex];
+  const fetchNextProfile = async () => {
+    setPending(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch("/api/swipe/next", {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (data?.done) {
+        setCurrentProfile(null);
+        setDone(true);
+      } else {
+        setCurrentProfile(data);
+        setDone(false);
+      }
+    } catch {
+      setCurrentProfile(null);
+      setDone(true);
+    } finally {
+      setPending(false);
+    }
+  };
 
-  const handleSwipe = (liked: boolean) => {
+  useEffect(() => {
+    fetchNextProfile();
+    // eslint-disable-next-line
+  }, []);
+
+  const swipeAndAnimate = async (liked: boolean, velocity = 800) => {
+    if (!currentProfile || pending) return;
+    setPending(true);
     setDirection(liked ? "right" : "left");
+    // Animate card out
+    await controls.start({
+      x: liked ? 500 : -500,
+      opacity: 0,
+      transition: { duration: 0.25, velocity }
+    });
+    await handleSwipe(liked, false); // pass false so we don't animate again from the button(click) handler
+    controls.set({x:0, opacity:1});
+  };
 
-    setTimeout(() => {
-      if (currentIndex < mockProfiles.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+  // This is your swipe action (shared logic, allow animate = true for button, false for drag)
+  const handleSwipe = async (liked: boolean, animate = true) => {
+    if (!currentProfile) return;
+    if (animate) {
+      swipeAndAnimate(liked);
+      return;
+    }
+    setDirection(liked ? "right" : "left");
+    setPending(true);
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    try {
+      const res = await fetch("/api/swipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ toUserId: currentProfile.id, direction: liked ? "like" : "skip" }),
+      });
+      const result = await res.json();
+      setTimeout(() => {
         setDirection(null);
-
-        if (liked && Math.random() > 0.5) {
+        setGeneralIndex((idx) => idx + 1);
+        fetchNextProfile();
+        if (liked && result?.match) {
           toast({
             title: "It's a Match! 🎉",
-            description: `You and ${currentProfile.name} liked each other!`,
+            description: `You and ${currentProfile.name || 'this person'} liked each other!`,
           });
-
           if (
             localStorage.getItem("notifications") !== "false" &&
             "Notification" in window &&
             Notification.permission === "granted"
           ) {
             new Notification("New Match!", {
-              body: `You matched with ${currentProfile.name}!`,
-              icon: currentProfile.photo,
+              body: `You matched with ${currentProfile.name || 'a new user'}!`,
+              icon: currentProfile.photoUrl || undefined,
             });
           }
         }
-      } else {
-        toast({
-          title: "That's everyone for now!",
-          description: "Check back later for more connections ✨",
-        });
-        router.push("/matches");
-      }
-    }, 300);
+      }, 300);
+    } catch {
+      toast({
+        title: "Could not swipe",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setPending(false);
+    }
   };
 
-  if (!currentProfile) {
+  const handleDragEnd = (event: any, info: any) => {
+    if (pending) return;
+    if (info.offset.x > 120) {
+      swipeAndAnimate(true, info.velocity.x);
+    } else if (info.offset.x < -120) {
+      swipeAndAnimate(false, info.velocity.x);
+    } else {
+      controls.start({ x: 0, opacity: 1 });
+    }
+  };
+
+  if (pending && !currentProfile && !done) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center px-6">
+        <div className="text-center space-y-6">
+          <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto animate-spin">
+            <Sparkles className="w-10 h-10 text-primary-foreground" />
+          </div>
+          <h2 className="text-2xl font-semibold">Loading...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (done || !currentProfile) {
     return (
       <div className="flex flex-col h-full items-center justify-center px-6">
         <div className="text-center space-y-6">
@@ -107,8 +152,7 @@ const Discover = () => {
           </p>
           <Button
             onClick={() => router.push("/matches")}
-            className="bg-primary hover:bg-primary/90"
-          >
+            className="bg-primary hover:bg-primary/90">
             View Matches
           </Button>
         </div>
@@ -139,7 +183,6 @@ const Discover = () => {
                 onValueChange={setAgeRange}
               />
             </div>
-
             {/* Distance Filter */}
             <div className="space-y-3">
               <Label className="text-sm font-medium text-foreground/80">
@@ -161,22 +204,26 @@ const Discover = () => {
         </div>
       </div>
 
-
       {/* Main Content */}
       <main className="flex-1 px-4 py-10 flex items-center justify-center overflow-y-auto">
         <div className="w-full max-w-md">
-          <Card
-            className={`relative overflow-hidden rounded-2xl shadow-md border border-border transition-all duration-300 transform ${direction === "left"
-                ? "opacity-0 -translate-x-full rotate-12"
-                : direction === "right"
-                  ? "opacity-0 translate-x-full -rotate-12"
-                  : "opacity-100 translate-x-0 rotate-0"
+          <motion.div
+            drag={pending ? false : "x"}
+            dragConstraints={{ left: 0, right: 0 }}
+            animate={controls}
+            onDragEnd={handleDragEnd}
+            className={`relative overflow-hidden rounded-2xl shadow-md border border-border transition-all duration-300 transform ${direction === 'left'
+              ? 'opacity-0 -translate-x-full rotate-12'
+              : direction === 'right'
+                ? 'opacity-0 translate-x-full -rotate-12'
+                : 'opacity-100 translate-x-0 rotate-0'
               }`}
+            style={{ touchAction: 'pan-y', background: 'white' }}
           >
             <div className="relative h-[26rem]">
               <img
-                src={currentProfile.photo}
-                alt={currentProfile.name}
+                src={currentProfile.photoUrl || "/default-profile.png"}
+                alt={currentProfile.name || 'Profile photo'}
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/70 via-black/40 to-transparent">
@@ -194,6 +241,7 @@ const Discover = () => {
                 variant="outline"
                 className="w-16 h-16 rounded-full border-2 border-gray-300 hover:border-destructive/60 hover:text-destructive transition"
                 onClick={() => handleSwipe(false)}
+                disabled={pending}
               >
                 <X className="w-8 h-8" />
               </Button>
@@ -201,13 +249,14 @@ const Discover = () => {
                 size="lg"
                 className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 transition"
                 onClick={() => handleSwipe(true)}
+                disabled={pending}
               >
                 <Heart className="w-8 h-8" fill="currentColor" />
               </Button>
             </div>
-          </Card>
+          </motion.div>
           <div className="text-center mt-4 text-sm text-muted-foreground">
-            {currentIndex + 1} / {mockProfiles.length}
+            {generalIndex} 
           </div>
         </div>
       </main>

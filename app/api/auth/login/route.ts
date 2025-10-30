@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
-  try {
-    const res = await fetch(`${apiBase}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    return new NextResponse(JSON.stringify(data), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch {
-    return NextResponse.json({ message: 'Internal error connecting to backend.' }, { status: 500 });
+  const { email, password } = await req.json();
+  if (!email || !password) {
+    return NextResponse.json({ message: 'Email and password required' }, { status: 400 });
   }
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !user.password) {
+    return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+  }
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) {
+    return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+  }
+  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+  return NextResponse.json({
+    access_token: token,
+    user: { id: user.id, email: user.email },
+  });
 }

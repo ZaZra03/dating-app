@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String
+  name         String?
+  age          Int?
+  bio          String?
+  photoUrl     String?
+  hobbies      String[] @default([])
+  personality  String[] @default([])
+  goal         String?
+  idealDate    String?
+  swipesGiven  Swipe[]  @relation("SwipesGiven")
+  swipesReceived Swipe[] @relation("SwipesReceived")
+  matchesA     Match[]  @relation("MatchesA")
+  matchesB     Match[]  @relation("MatchesB")
+}
+
+model Swipe {
+  id        Int    @id @default(autoincrement())
+  fromId    Int
+  toId      Int
+  direction String // "like" | "skip"
+  createdAt DateTime @default(now())
+
+  from   User @relation("SwipesGiven", fields: [fromId], references: [id])
+  to     User @relation("SwipesReceived", fields: [toId], references: [id])
+
+  @@unique([fromId, toId]) // Only one swipe per pair
+}
+
+model Match {
+  id      Int   @id @default(autoincrement())
+  userAId Int
+  userBId Int
+  createdAt DateTime @default(now())
+
+  userA   User @relation("MatchesA", fields: [userAId], references: [id])
+  userB   User @relation("MatchesB", fields: [userBId], references: [id])
+
+  chatSession ChatSession?
+
+  @@unique([userAId, userBId])
+}
+
+model ChatSession {
+  id           Int      @id @default(autoincrement())
+  matchId      Int      @unique
+  startTime    DateTime @default(now())
+  unlockedA    Boolean  @default(false)
+  unlockedB    Boolean  @default(false)
+  ended        Boolean  @default(false)
+  endedByA     Boolean  @default(false)
+  endedByB     Boolean  @default(false)
+  confirmedA   Boolean  @default(false)
+  confirmedB   Boolean  @default(false)
+  match        Match    @relation(fields: [matchId], references: [id])
+  messages     ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  Int
+  content   String
+  sentAt    DateTime @default(now())
+  session   ChatSession @relation(fields: [chatId], references: [id])
+}

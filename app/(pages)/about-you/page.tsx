@@ -48,26 +48,42 @@ const AboutYou = () => {
     );
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      // Persist selections for profile page
+      // PATCH about-you data to /api/users/profile
+      const payload = {
+        hobbies: selectedHobbies,
+        personality: selectedPersonality,
+        goal: selectedGoal,
+        idealDate,
+      };
       try {
-        const payload = {
-          hobbies: selectedHobbies,
-          personality: selectedPersonality,
-          goal: selectedGoal,
-          idealDate,
-        };
-        localStorage.setItem("aboutYou", JSON.stringify(payload));
-      } catch {}
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const res = await fetch('/api/users/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
 
-      toast({
-        title: "Profile enhanced! ✨",
-        description: "Let's complete your profile",
-      });
-      router.push("/profile");
+        if (!res.ok) throw new Error('Failed to update profile');
+
+        toast({
+          title: "Profile enhanced! ✨",
+          description: "Let's complete your profile",
+        });
+        router.push("/profile?from=onboarding");
+      } catch (e: any) {
+        toast({
+          title: 'Could not save About You',
+          description: e.message || 'Something went wrong. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 

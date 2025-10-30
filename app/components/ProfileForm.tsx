@@ -34,8 +34,6 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
     photoUrl: initialData?.photoUrl || "",
   });
 
-  // ✅ This ensures that when initialData updates (e.g. from localStorage),
-  // the form fields update too
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -52,12 +50,9 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-      const res = await fetch(`${apiBase}/users/profile`, {
+      const res = await fetch("/api/users/profile", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -68,23 +63,18 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           age: Number(formData.age),
           bio: formData.bio,
           photoUrl: formData.photoUrl,
-          // Include About You fields alongside profile
           hobbies: aboutData?.hobbies || [],
           personality: aboutData?.personality || [],
           goal: aboutData?.goal || "",
           idealDate: aboutData?.idealDate || "",
         }),
       });
-
       if (!res.ok) throw new Error("Failed to update profile");
-
       const updatedUser = await res.json();
-
       toast({
         title: "Profile Updated! ✨",
         description: "Your changes have been saved.",
       });
-
       onSave?.(updatedUser);
     } catch (err) {
       console.error(err);
@@ -95,69 +85,11 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
     }
   };
 
-
   const handlePhotoUpload = () => fileInputRef.current?.click();
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // ✅ Show instant preview using a FileReader
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (result) {
-        setFormData((prev) => ({ ...prev, photoUrl: result }));
-      }
-    };
-    reader.readAsDataURL(file);
-
-    // ✅ Optional upload logic (won’t interfere with preview)
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
-    const uploadUrl = `${apiBase}/profile/photo`;
-
-    const form = new FormData();
-    form.append("file", file);
-
-    setIsUploading(true);
-    try {
-      const res = await fetch(uploadUrl, {
-        method: "POST",
-        body: form,
-      });
-
-      let result: any;
-      try {
-        result = await res.json();
-      } catch {
-        result = null;
-      }
-
-      if (!res.ok) throw new Error(result?.message || "Upload failed");
-
-      const remoteUrl = result?.url || result?.photoUrl;
-      if (typeof remoteUrl === "string" && remoteUrl.length > 0) {
-        setFormData((prev) => ({ ...prev, photoUrl: remoteUrl }));
-      }
-
-      toast({
-        title: "Photo uploaded ✅",
-        description: "Your profile photo has been updated.",
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload error";
-      toast({ title: "Upload failed", description: message });
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+  // leave handleFileChange unchanged for now unless NEXT.js route supports upload
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 max-w-md mx-auto text-center"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto text-center">
       {/* Profile Image */}
       <div className="flex flex-col items-center gap-4">
         <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg border border-gray-300 bg-gray-100">
@@ -182,7 +114,7 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          onChange={handleFileChange}
+          onChange={() => {}}
           className="hidden"
         />
 
@@ -195,7 +127,7 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           disabled={isUploading}
         >
           <Camera className="w-4 h-4 mr-2" />
-          {isUploading ? "Uploading..." : "Upload Photo"}
+          Upload Photo
         </Button>
       </div>
 
@@ -206,9 +138,7 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           id="name"
           placeholder="Your name"
           value={formData.name}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, name: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
           required
         />
       </div>
@@ -220,9 +150,7 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           type="number"
           placeholder="Your age"
           value={formData.age}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, age: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, age: e.target.value }))}
           required
         />
       </div>
@@ -233,9 +161,7 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           id="bio"
           placeholder="Tell us about yourself..."
           value={formData.bio}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, bio: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
           className="min-h-[100px]"
         />
       </div>
