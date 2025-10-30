@@ -36,13 +36,13 @@ export default function SideNav() {
   };
 
   return (
-    <div className="flex h-full flex-col px-3 py-4 md:px-2">
+    <div className="flex h-full flex-col px-3 py-4 md:px-2 bg-background text-foreground">
       <Link
-        className="mb-2 flex h-20 items-end justify-start rounded-md bg-blue-600 p-4 md:h-40"
         href="/"
+        className="mb-6 flex flex-col items-center justify-center rounded-xl bg-primary text-primary-foreground py-6 px-2 md:py-10 md:px-4 shadow-md"
       >
-        <div className="w-32 text-white md:w-40 text-xl font-semibold">
-          Dating App
+        <div className="text-2xl font-extrabold tracking-tight md:text-3xl">
+          Spark
         </div>
       </Link>
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
@@ -59,8 +59,8 @@ export default function SideNav() {
                 className={
                   "flex h-[48px] w-full items-center gap-2 rounded-md p-3 text-sm font-medium md:p-2 md:px-3 " +
                   (isActive
-                    ? "bg-sky-100 text-blue-600"
-                    : "bg-gray-50 hover:bg-sky-100 hover:text-blue-600")
+                    ? "bg-primary/15 dark:bg-primary/30 text-primary border border-primary/30 dark:border-primary/40"
+                    : "bg-transparent text-foreground/80 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20")
                 }
               >
                 <Icon className="w-5 h-5" />
@@ -69,12 +69,12 @@ export default function SideNav() {
             );
           })}
         </nav>
-        <div className="hidden h-auto w-full grow rounded-md bg-gray-50 md:block"></div>
+        <div className="hidden h-auto w-full grow rounded-md bg-muted md:block"></div>
         <form>
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex h-[48px] w-full grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3"
+            className="flex h-[48px] w-full grow items-center justify-center gap-2 rounded-md bg-muted p-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground md:flex-none md:justify-start md:p-2 md:px-3"
           >
             <Power className="w-6" />
             <div className="hidden md:block">Sign Out</div>

@@ -13,8 +13,8 @@ const Landing = () => {
       <header className="bg-white border-b border-gray-100">
         <div className="container mx-auto px-6 py-6 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+              <Sparkles className="w-6 h-6" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-gray-900">Spark</span>
           </div>
