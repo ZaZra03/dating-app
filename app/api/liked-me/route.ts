@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   // 1. Find all users who liked (swiped right on) current user
-  const swipes = await prisma.swipe.findMany({
+  const swipes: Array<{ fromId: number }> = await prisma.swipe.findMany({
     where: {
       toId: userId,
       direction: 'like',
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   });
   const likedMeUserIds = swipes.map(s => s.fromId);
   // 2. Remove those where there is already a match (i.e., mutual like exists)
-  const matches = await prisma.match.findMany({
+  const matches: Array<{ userAId: number; userBId: number }> = await prisma.match.findMany({
     where: {
       OR: [
         { userAId: userId, userBId: { in: likedMeUserIds } },

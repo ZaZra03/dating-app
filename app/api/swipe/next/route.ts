@@ -22,11 +22,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   // Find already swiped user IDs
-  const swiped = await prisma.swipe.findMany({
+  const swiped: Array<{ toId: number }> = await prisma.swipe.findMany({
     where: { fromId: userId },
     select: { toId: true }
   });
-  const excludeIds = [userId, ...swiped.map(s => s.toId)];
+  const excludeIds = [userId, ...swiped.map((s) => s.toId)];
 
   // Fetch next available profile
   const nextUser = await prisma.user.findFirst({

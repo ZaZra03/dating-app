@@ -22,7 +22,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   // Find all matches involving this user
-  const matches = await prisma.match.findMany({
+  const matches: Array<{
+    id: number;
+    userAId: number;
+    userBId: number;
+    createdAt: Date;
+    userA: { id: number; name: string | null; age: number | null; bio: string | null; photoUrl: string | null };
+    userB: { id: number; name: string | null; age: number | null; bio: string | null; photoUrl: string | null };
+  }> = await prisma.match.findMany({
     where: { OR: [{ userAId: userId }, { userBId: userId }] },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -31,7 +38,7 @@ export async function GET(req: NextRequest) {
     },
   });
   // Format to always return the "other" user's info
-  const formatted = matches.map(match => {
+  const formatted = matches.map((match) => {
     const other = match.userAId === userId ? match.userB : match.userA;
     return {
       id: match.id,
