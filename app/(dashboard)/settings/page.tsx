@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -65,29 +67,9 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center border-b border-border">
-        <Button variant="ghost" onClick={() => router.push("/")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold">Spark</span>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-4">
         <div className="max-w-2xl mx-auto space-y-8">
-          {/* Title */}
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2">Settings</h1>
-            <p className="text-muted-foreground">Manage your Spark experience</p>
-          </div>
-
           {/* Settings Sections */}
           <div className="space-y-4">
             {/* Profile Section */}
@@ -166,17 +148,6 @@ const Settings = () => {
                 Version 1.0.0
               </div>
             </div>
-
-            {/* Logout Button */}
-            <Button
-              variant="destructive"
-              size="lg"
-              className="w-full"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-5 h-5 mr-2" />
-              Log Out
-            </Button>
           </div>
         </div>
       </main>

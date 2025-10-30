@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/components/MatchCard";
 import { ArrowLeft, Sparkles, Users } from "lucide-react";
@@ -49,23 +51,7 @@ const Matches = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center border-b border-border">
-        <Button variant="ghost" onClick={() => router.push("/")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold">Spark</span>
-        </div>
-        <Button variant="ghost" onClick={() => router.push("/settings")} className="w-10">
-          ⚙️
-        </Button>
-      </header>
-
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-4">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -75,6 +61,17 @@ const Matches = () => {
             <p className="text-muted-foreground text-lg">
               {matches.length} sparks found! 🔥
             </p>
+            <div className="mt-12 text-center">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => router.push("/find-match")}
+                className="hover:bg-black hover:text-white transition-colors duration-300"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Find Another Match
+              </Button>
+            </div>
           </div>
 
           {matches.length === 0 ? (
@@ -82,12 +79,12 @@ const Matches = () => {
               <p className="text-muted-foreground text-lg mb-6">
                 No matches yet. Start chatting to find your spark! ✨
               </p>
-            <Button
-              onClick={() => router.push("/find-match")}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Find a Match
-            </Button>
+              <Button
+                onClick={() => router.push("/find-match")}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Find a Match
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -101,17 +98,6 @@ const Matches = () => {
               ))}
             </div>
           )}
-
-          <div className="mt-12 text-center">
-          <Button
-            size="lg"
-            onClick={() => router.push("/find-match")}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <Sparkles className="w-5 h-5 mr-2" />
-            Find Another Match
-          </Button>
-          </div>
         </div>
       </main>
     </div>
