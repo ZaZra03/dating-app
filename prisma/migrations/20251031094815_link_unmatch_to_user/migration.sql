@@ -1,0 +1,5 @@
+-- AddForeignKey
+ALTER TABLE "Unmatch" ADD CONSTRAINT "Unmatch_userAId_fkey" FOREIGN KEY ("userAId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Unmatch" ADD CONSTRAINT "Unmatch_userBId_fkey" FOREIGN KEY ("userBId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

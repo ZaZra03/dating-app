@@ -236,8 +236,8 @@ const Discover = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header with sidebar trigger and filters */}
-      {/* Filters - Desktop */}
-      <div className="hidden lg:block px-6 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
+      {/* Filters - Now visible on all screen sizes */}
+      <div className="px-6 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {/* Age Filter */}
@@ -295,7 +295,7 @@ const Discover = () => {
           >
             <div className="relative h-[26rem]">
               <img
-                src={currentProfile.photoUrl || "/default-profile.png"}
+                src={currentProfile.photoUrl || "/default-profile.jpg"}
                 alt={currentProfile.name || 'Profile photo'}
                 className="w-full h-full object-cover"
               />

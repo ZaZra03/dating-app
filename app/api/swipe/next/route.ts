@@ -57,7 +57,13 @@ export async function GET(req: NextRequest) {
     where: { fromId: userId },
     select: { toId: true }
   });
-  const excludeIds = [userId, ...swiped.map((s) => s.toId)];
+  // Users explicitly unmatched (both directions)
+  const unmatches: Array<{ userAId: number; userBId: number }> = await prisma.unmatch.findMany({
+    where: { OR: [ { userAId: userId }, { userBId: userId } ] },
+    select: { userAId: true, userBId: true }
+  });
+  const unmatchIds = unmatches.map((u) => (u.userAId === userId ? u.userBId : u.userAId));
+  const excludeIds = [userId, ...swiped.map((s) => s.toId), ...unmatchIds];
 
   const ageFilter: any = {};
   if (typeof ageMin === 'number' && Number.isFinite(ageMin)) {

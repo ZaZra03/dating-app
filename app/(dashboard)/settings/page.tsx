@@ -7,6 +7,7 @@ import { ArrowLeft, User, Bell, LogOut, Sparkles, Heart, Moon, Sun } from "lucid
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { withAuth } from "@/lib/withAuth";
 
 const Settings = () => {
   const router = useRouter();
@@ -172,4 +173,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default withAuth(Settings);

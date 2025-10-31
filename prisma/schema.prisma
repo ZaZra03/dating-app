@@ -15,21 +15,24 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String
-  name         String?
-  age          Int?
-  bio          String?
-  photoUrl     String?
-  hobbies      String[] @default([])
-  personality  String[] @default([])
-  goal         String?
-  idealDate    String?
-  swipesGiven  Swipe[]  @relation("SwipesGiven")
-  swipesReceived Swipe[] @relation("SwipesReceived")
-  matchesA     Match[]  @relation("MatchesA")
-  matchesB     Match[]  @relation("MatchesB")
+  id              Int        @id @default(autoincrement())
+  email           String     @unique
+  password        String
+  name            String?
+  age             Int?
+  bio             String?
+  photoUrl        String?
+  hobbies         String[]   @default([])
+  personality     String[]   @default([])
+  goal            String?
+  idealDate       String?
+  swipesGiven     Swipe[]    @relation("SwipesGiven")
+  swipesReceived  Swipe[]    @relation("SwipesReceived")
+  matchesA        Match[]    @relation("MatchesA")
+  matchesB        Match[]    @relation("MatchesB")
+  // Recommended relations for Unmatch:
+  unmatchesA      Unmatch[]  @relation("UnmatchesA")
+  unmatchesB      Unmatch[]  @relation("UnmatchesB")
 }
 
 model Swipe {
@@ -81,4 +84,16 @@ model ChatMessage {
   content   String
   sentAt    DateTime @default(now())
   session   ChatSession @relation(fields: [chatId], references: [id])
+}
+
+model Unmatch {
+  id        Int      @id @default(autoincrement())
+  userAId   Int
+  userBId   Int
+  createdAt DateTime @default(now())
+
+  userA     User     @relation("UnmatchesA", fields: [userAId], references: [id])
+  userB     User     @relation("UnmatchesB", fields: [userBId], references: [id])
+
+  @@unique([userAId, userBId])
 }

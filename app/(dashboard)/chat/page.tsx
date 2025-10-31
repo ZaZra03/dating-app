@@ -6,8 +6,10 @@ import { storeMessages } from '@/lib/store-messages';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
+import { withAuth } from '@/lib/withAuth';
+import { useToast } from '@/hooks/use-toast';
 
-export default function Page() {
+function ChatPage() {
   const [username, setUsername] = useState<string>("");
   const [matchId, setMatchId] = useState<number | null>(null);
   const [initialMessages, setInitialMessages] = useState<any[]>([]);
@@ -15,6 +17,7 @@ export default function Page() {
   const [openedViaMatches, setOpenedViaMatches] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     try {
@@ -59,6 +62,24 @@ export default function Page() {
   useEffect(() => {
     const load = async () => {
       if (!matchId) return;
+      // Validate the match still exists; if it doesn't, clear state and URL
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const resMatches = await fetch(`/api/matches`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (resMatches.ok) {
+          const list = await resMatches.json();
+          const stillExists = Array.isArray(list) && list.some((m: any) => Number(m.id) === Number(matchId));
+          if (!stillExists) {
+            setOpenedViaMatches(false);
+            setMatchId(null);
+            try { localStorage.removeItem('currentMatchId'); sessionStorage.removeItem('openedFrom'); } catch {}
+            router.replace('/chat');
+            return;
+          }
+        }
+      } catch {}
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const res = await fetch(`/api/chat/messages?matchId=${matchId}&limit=200`, {
@@ -92,8 +113,21 @@ export default function Page() {
       await storeMessages(matchId, newOnes);
       const newest = newOnes[newOnes.length - 1];
       if (newest?.createdAt) setLastSavedCreatedAt(newest.createdAt);
-    } catch (e) {
-      console.error('Store messages failed', e);
+    } catch (e: any) {
+      const msg = typeof e?.message === 'string' ? e.message : '';
+      if (msg === 'MATCH_NOT_FOUND' || msg === 'Match not found') {
+        toast({
+          title: 'Chat ended',
+          description: 'The other user has unmatched. This chat is no longer available.',
+          variant: 'destructive',
+        });
+        try { localStorage.removeItem('currentMatchId'); sessionStorage.removeItem('openedFrom'); } catch {}
+        setOpenedViaMatches(false);
+        setMatchId(null);
+        router.replace('/chat');
+      } else {
+        console.error('Store messages failed', e);
+      }
     }
   }, [matchId, lastSavedCreatedAt]);
 
@@ -112,7 +146,7 @@ export default function Page() {
       </div>
     );
   }
-
   return <RealtimeChat roomName={`match-${matchId}`} username={username || "Guest"} onMessage={handleMessage} messages={initialMessages} />
 }
 
+export default withAuth(ChatPage);

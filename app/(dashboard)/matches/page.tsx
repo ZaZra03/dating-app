@@ -6,6 +6,7 @@ import { ArrowLeft, Sparkles, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { withAuth } from "@/lib/withAuth";
 
 const Matches = () => {
   const router = useRouter();
@@ -44,12 +45,35 @@ const Matches = () => {
     router.push(`/chat?matchId=${matchId}`);
   };
 
-  const handleUnmatch = (matchId: string, matchName: string) => {
+  const handleUnmatch = async (matchId: string, matchName: string) => {
+    const previous = matches;
     setMatches(prev => prev.filter(match => `${match.id}` !== `${matchId}`));
-    toast({
-      title: "Unmatched",
-      description: `You've unmatched with ${matchName}. 💔`,
-    });
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch(`/api/matches/${matchId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed');
+      try {
+        const current = typeof window !== 'undefined' ? localStorage.getItem('currentMatchId') : null;
+        if (current && String(current) === String(matchId)) {
+          localStorage.removeItem('currentMatchId');
+          sessionStorage.removeItem('openedFrom');
+        }
+      } catch {}
+      toast({
+        title: "Unmatched",
+        description: `You've unmatched with ${matchName}. 💔`,
+      });
+    } catch {
+      setMatches(previous);
+      toast({
+        title: "Could not unmatch",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -116,4 +140,4 @@ const Matches = () => {
   );
 };
 
-export default Matches;
+export default withAuth(Matches);

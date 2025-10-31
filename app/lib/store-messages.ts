@@ -40,7 +40,7 @@ export async function storeMessages(matchId: number, messages: ChatMessageDTO[])
     body: JSON.stringify({ matchId, messages }),
   });
   if (!res.ok) {
-    let msg = "Failed to store messages";
+    let msg = res.status === 404 ? "MATCH_NOT_FOUND" : "Failed to store messages";
     try {
       const j = await res.json();
       if (j?.message) msg = j.message;

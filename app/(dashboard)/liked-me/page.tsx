@@ -6,6 +6,7 @@ import { ArrowLeft, Heart, User, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { withAuth } from "@/lib/withAuth";
 
 const LikedMe = () => {
   const router = useRouter();
@@ -134,4 +135,4 @@ const LikedMe = () => {
   );
 };
 
-export default LikedMe;
+export default withAuth(LikedMe);
