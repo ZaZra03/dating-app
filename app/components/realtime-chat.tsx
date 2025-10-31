@@ -1,24 +1,3 @@
-'use client'
-
-import { cn } from '@/lib/utils'
-import { ChatMessageItem } from '@/components/chat-message'
-import { useChatScroll } from '@/hooks/use-chat-scroll'
-import {
-  type ChatMessage,
-  useRealtimeChat,
-} from '@/hooks/use-realtime-chat'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Send } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-
-interface RealtimeChatProps {
-  roomName: string
-  username: string
-  onMessage?: (messages: ChatMessage[]) => void
-  messages?: ChatMessage[]
-}
-
 /**
  * Real-time chat component with Supabase integration.
  * Merges real-time messages with persisted messages from the database.
