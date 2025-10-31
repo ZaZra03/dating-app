@@ -3,9 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Heart, Sparkles, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-const SparkResult = () => {
+const SparkResultInner = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMatch = searchParams.get("match") === "true";
@@ -120,6 +120,14 @@ const SparkResult = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const SparkResult = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}> 
+      <SparkResultInner />
+    </Suspense>
   );
 };
 
