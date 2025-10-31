@@ -11,26 +11,43 @@ import { useToast } from "@/hooks/use-toast";
 const Settings = () => {
   const router = useRouter();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState(() => {
-    return localStorage.getItem("notifications") !== "false";
-  });
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
-  });
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
+  // Initialize from localStorage on client only
   useEffect(() => {
-    if (darkMode) {
+    if (typeof window === "undefined") return;
+    const storedNotifications = localStorage.getItem("notifications");
+    if (storedNotifications !== null) {
+      setNotifications(storedNotifications !== "false");
+    }
+    const storedTheme = localStorage.getItem("theme");
+    const isDark = storedTheme === "dark";
+    setDarkMode(isDark);
+    if (isDark) {
       document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (darkMode) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+      }
     }
   }, [darkMode]);
 
   const handleNotificationToggle = (checked: boolean) => {
     setNotifications(checked);
-    localStorage.setItem("notifications", checked.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("notifications", checked.toString());
+    }
     
     if (checked && "Notification" in window) {
       Notification.requestPermission().then((permission) => {
