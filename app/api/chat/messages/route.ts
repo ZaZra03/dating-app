@@ -1,21 +1,35 @@
+/**
+ * Chat messages API route.
+ * Handles storing and retrieving chat messages for matches.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
+/**
+ * Extracts user ID from the Authorization Bearer token header.
+ * 
+ * @param req - The incoming request with authorization header
+ * @returns User ID if token is valid, null otherwise
+ */
 function getUserIdFromAuthHeader(req: NextRequest): number | null {
   const auth = req.headers.get("authorization");
   if (!auth || !auth.startsWith("Bearer ")) return null;
   try {
     const token = auth.substring("Bearer ".length);
-    const payload = jwt.verify(token, JWT_SECRET) as any;
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
     return payload.userId;
   } catch {
     return null;
   }
 }
 
+/**
+ * Incoming message format for storing chat messages.
+ */
 type IncomingMessage = {
   id?: string;
   content: string;
@@ -23,6 +37,20 @@ type IncomingMessage = {
   user?: { name?: string };
 };
 
+/**
+ * Stores chat messages for a match.
+ * Automatically creates a chat session if one doesn't exist.
+ * 
+ * @param req - The incoming request with authorization header and message data
+ * @returns JSON response with count of created messages
+ * 
+ * Request body: { matchId: number, messages: IncomingMessage[] }
+ * Response (200): { created: number }
+ * Response (400): { message: "matchId is required" } or { message: "messages array is required" } or { message: "Invalid JSON" }
+ * Response (401): { message: "Unauthorized" }
+ * Response (403): { message: "Forbidden" }
+ * Response (404): { message: "Match not found" }
+ */
 export async function POST(req: NextRequest) {
   const authedUserId = getUserIdFromAuthHeader(req);
   if (!authedUserId) {
@@ -45,7 +73,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "messages array is required" }, { status: 400 });
   }
 
-  // Ensure the match exists and the authed user is a participant
   const match = await prisma.match.findUnique({
     where: { id: matchId },
     include: { userA: true, userB: true, chatSession: true },
@@ -57,7 +84,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
-  // Ensure a chat session exists for the match
   const chatSession = match.chatSession
     ? match.chatSession
     : await prisma.chatSession.create({ data: { matchId } });
@@ -66,7 +92,6 @@ export async function POST(req: NextRequest) {
   if (match.userA?.name) nameToUserId.set(match.userA.name, match.userAId);
   if (match.userB?.name) nameToUserId.set(match.userB.name, match.userBId);
 
-  // Basic in-request de-duplication by (content, createdAt) pair
   const seen = new Set<string>();
   const toCreate = messages
     .map((m) => {
@@ -79,7 +104,6 @@ export async function POST(req: NextRequest) {
       if (incomingName && nameToUserId.has(incomingName)) {
         senderId = nameToUserId.get(incomingName)!;
       } else {
-        // Fallback to authed user when name is missing/unknown
         senderId = authedUserId;
       }
 
@@ -89,7 +113,6 @@ export async function POST(req: NextRequest) {
         chatId: chatSession.id,
         senderId,
         content: m.content,
-        // Let DB default now() if createdAt missing/invalid
         ...(sentAt && !isNaN(sentAt.getTime()) ? { sentAt } : {}),
       };
     })
@@ -99,12 +122,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ created: 0 });
   }
 
-  // No unique constraint available to skip duplicates reliably; rely on caller batching + above in-memory check
   await prisma.chatMessage.createMany({ data: toCreate });
 
   return NextResponse.json({ created: toCreate.length });
 }
 
+/**
+ * Retrieves chat messages for a match.
+ * Automatically creates a chat session if one doesn't exist.
+ * 
+ * @param req - The incoming request with authorization header and query parameters
+ * @returns JSON response with array of chat messages
+ * 
+ * Query parameters:
+ *   - matchId (required): The match ID to retrieve messages for
+ *   - limit (optional): Maximum number of messages to return (default: 200, max: 500)
+ * 
+ * Response (200): { messages: ChatMessage[] }
+ * Response (400): { message: "matchId is required" }
+ * Response (401): { message: "Unauthorized" }
+ * Response (403): { message: "Forbidden" }
+ * Response (404): { message: "Match not found" }
+ */
 export async function GET(req: NextRequest) {
   const authedUserId = getUserIdFromAuthHeader(req);
   if (!authedUserId) {

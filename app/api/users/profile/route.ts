@@ -1,8 +1,14 @@
+/**
+ * User profile API route.
+ * Handles retrieval and updates of user profile information.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
+
 const PUBLIC_USER_FIELDS = {
   id: true,
   email: true,
@@ -16,19 +22,34 @@ const PUBLIC_USER_FIELDS = {
   idealDate: true
 };
 
+/**
+ * Extracts user ID from the Authorization Bearer token header.
+ * 
+ * @param req - The incoming request with authorization header
+ * @returns User ID if token is valid, null otherwise
+ */
 function getUserIdFromAuthHeader(req: NextRequest): number | null {
   const auth = req.headers.get("authorization");
   if (!auth || !auth.startsWith("Bearer ")) return null;
   try {
-    // jwt payload: { userId: number, iat, exp }
     const token = auth.substring("Bearer ".length);
-    const payload = jwt.verify(token, JWT_SECRET) as any;
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
     return payload.userId;
   } catch {
     return null;
   }
 }
 
+/**
+ * Retrieves the authenticated user's profile information.
+ * 
+ * @param req - The incoming request with authorization header
+ * @returns JSON response with user profile data, or error message
+ * 
+ * Response (200): User profile object with public fields
+ * Response (401): { message: "Unauthorized" }
+ * Response (404): { message: "User not found" }
+ */
 export async function GET(req: NextRequest) {
   const userId = getUserIdFromAuthHeader(req);
   if (!userId) {
@@ -41,6 +62,19 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(user);
 }
 
+/**
+ * Updates the authenticated user's profile information.
+ * Only allowed fields can be updated (name, age, bio, photoUrl, hobbies, personality, goal, idealDate).
+ * 
+ * @param req - The incoming request with authorization header and update data in JSON body
+ * @returns JSON response with updated user profile data, or error message
+ * 
+ * Request body: Partial profile fields to update
+ * Response (200): Updated user profile object
+ * Response (401): { message: "Unauthorized" }
+ * Response (404): { message: "User not found" }
+ * Response (500): { message: "Failed to update profile" }
+ */
 export async function PATCH(req: NextRequest) {
   const userId = getUserIdFromAuthHeader(req);
   if (!userId) {

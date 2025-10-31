@@ -1,13 +1,24 @@
+/**
+ * Custom hook for real-time chat functionality using Supabase channels.
+ * Handles subscription to chat rooms, message sending/receiving, and connection status.
+ */
+
 'use client'
 
 import { createClient } from '@/lib/client'
 import { useCallback, useEffect, useState } from 'react'
 
+/**
+ * Props for the useRealtimeChat hook.
+ */
 interface UseRealtimeChatProps {
   roomName: string
   username: string
 }
 
+/**
+ * Chat message structure for real-time communication.
+ */
 export interface ChatMessage {
   id: string
   content: string
@@ -19,6 +30,23 @@ export interface ChatMessage {
 
 const EVENT_MESSAGE_TYPE = 'message'
 
+/**
+ * Hook for managing real-time chat via Supabase channels.
+ * 
+ * @param props - Configuration object with roomName and username
+ * @param props.roomName - The name of the chat room to join
+ * @param props.username - The username of the current user
+ * @returns Object containing messages array, sendMessage function, and connection status
+ * 
+ * @returns { messages: ChatMessage[] } - Array of received messages
+ * @returns { sendMessage: (content: string) => Promise<void> } - Function to send a message
+ * @returns { isConnected: boolean } - Whether the channel is connected
+ * 
+ * Side effects:
+ * - Subscribes to Supabase channel on mount
+ * - Stores latest message timestamp in localStorage for notifications
+ * - Unsubscribes from channel on unmount
+ */
 export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
   const supabase = createClient()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -67,7 +95,6 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
         createdAt: new Date().toISOString(),
       }
 
-      // Update local state immediately for the sender
       setMessages((current) => [...current, message])
 
       await channel.send({

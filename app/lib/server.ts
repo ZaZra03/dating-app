@@ -1,9 +1,30 @@
+/**
+ * Supabase client factory for server-side environments.
+ * Creates a Supabase client instance configured for server-side usage with cookie-based session management.
+ */
+
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 /**
- * If using Fluid compute: Don't put this client in a global variable. Always create a new client within each
- * function when using it.
+ * Creates a Supabase server client instance.
+ * 
+ * @returns Promise resolving to configured Supabase client for server usage
+ * 
+ * Important: Always create a new client instance within each function call.
+ * Do not store this client in a global variable when using Fluid compute.
+ * 
+ * Uses environment variables:
+ * - NEXT_PUBLIC_SUPABASE_URL: Supabase project URL
+ * - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY: Supabase anon/public key
+ * 
+ * Side effects:
+ * - Reads and writes cookies for session management
+ * - May silently fail cookie operations in Server Components (handled by middleware)
+ * 
+ * @example
+ * const supabase = await createClient();
+ * const { data } = await supabase.auth.getUser();
  */
 export async function createClient() {
   const cookieStore = await cookies()
@@ -22,9 +43,8 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Ignore cookie set errors in Server Components
+            // Middleware will handle session refresh
           }
         },
       },

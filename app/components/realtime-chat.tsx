@@ -20,12 +20,63 @@ interface RealtimeChatProps {
 }
 
 /**
- * Realtime chat component
- * @param roomName - The name of the room to join. Each room is a unique chat.
- * @param username - The username of the user
- * @param onMessage - The callback function to handle the messages. Useful if you want to store the messages in a database.
- * @param messages - The messages to display in the chat. Useful if you want to display messages from a database.
- * @returns The chat component
+ * Real-time chat component with Supabase integration.
+ * Merges real-time messages with persisted messages from the database.
+ */
+
+'use client'
+
+import { cn } from '@/lib/utils'
+import { ChatMessageItem } from '@/components/chat-message'
+import { useChatScroll } from '@/hooks/use-chat-scroll'
+import {
+  type ChatMessage,
+  useRealtimeChat,
+} from '@/hooks/use-realtime-chat'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Send } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+
+/**
+ * Props for the RealtimeChat component.
+ */
+interface RealtimeChatProps {
+  roomName: string
+  username: string
+  onMessage?: (messages: ChatMessage[]) => void
+  messages?: ChatMessage[]
+}
+
+/**
+ * Real-time chat component that integrates Supabase channels with persisted messages.
+ * 
+ * @param props - Component props
+ * @param props.roomName - The name of the chat room to join (should be unique per chat)
+ * @param props.username - The username of the current user
+ * @param props.onMessage - Optional callback function invoked whenever messages change
+ * @param props.messages - Optional array of initial messages (typically loaded from database)
+ * 
+ * Features:
+ * - Real-time message broadcasting via Supabase channels
+ * - Merges real-time messages with persisted messages
+ * - Automatic scrolling to bottom on new messages
+ * - Duplicate message prevention
+ * - Message sorting by creation date
+ * - Empty state display
+ * 
+ * Side effects:
+ * - Subscribes to Supabase channel on mount
+ * - Calls onMessage callback when messages change
+ * - Scrolls to bottom when new messages arrive
+ * 
+ * @example
+ * <RealtimeChat
+ *   roomName="match-123"
+ *   username="Alice"
+ *   messages={persistedMessages}
+ *   onMessage={(msgs) => storeMessages(123, msgs)}
+ * />
  */
 export const RealtimeChat = ({
   roomName,
@@ -45,14 +96,11 @@ export const RealtimeChat = ({
   })
   const [newMessage, setNewMessage] = useState('')
 
-  // Merge realtime messages with initial messages
   const allMessages = useMemo(() => {
     const mergedMessages = [...initialMessages, ...realtimeMessages]
-    // Remove duplicates based on message id
     const uniqueMessages = mergedMessages.filter(
       (message, index, self) => index === self.findIndex((m) => m.id === message.id)
     )
-    // Sort by creation date
     const sortedMessages = uniqueMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 
     return sortedMessages
@@ -65,7 +113,6 @@ export const RealtimeChat = ({
   }, [allMessages, onMessage])
 
   useEffect(() => {
-    // Scroll to bottom whenever messages change
     scrollToBottom()
   }, [allMessages, scrollToBottom])
 

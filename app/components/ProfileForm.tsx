@@ -1,3 +1,8 @@
+/**
+ * Profile form component for editing user profile information.
+ * Handles display and submission of profile data including name, age, bio, and photo URL.
+ */
+
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Camera, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+/**
+ * Profile data fields interface.
+ */
 interface ProfileData {
   name: string;
   age: string;
@@ -13,6 +21,9 @@ interface ProfileData {
   photoUrl: string;
 }
 
+/**
+ * Additional profile information interface.
+ */
 interface AboutData {
   hobbies: string[];
   personality: string[];
@@ -20,12 +31,35 @@ interface AboutData {
   idealDate: string;
 }
 
+/**
+ * Props for the ProfileForm component.
+ */
 interface ProfileFormProps {
   initialData?: Partial<ProfileData>;
   aboutData?: AboutData;
   onSave?: (data: any) => void;
 }
 
+/**
+ * Form component for editing user profile information.
+ * 
+ * @param props - Component props
+ * @param props.initialData - Initial profile data to populate the form
+ * @param props.aboutData - Additional profile information (hobbies, personality, etc.)
+ * @param props.onSave - Callback function called after successful profile update
+ * 
+ * Features:
+ * - Photo upload trigger (UI only, actual upload not implemented)
+ * - Form validation for name and age
+ * - Bio text area
+ * - Real-time form state updates
+ * - Toast notifications on success/failure
+ * 
+ * Side effects:
+ * - Makes PATCH request to /api/users/profile on submit
+ * - Updates localStorage with new user data
+ * - Shows toast notifications
+ */
 export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps) => {
   const [formData, setFormData] = useState<ProfileData>({
     name: initialData?.name || "",
@@ -85,8 +119,79 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
     }
   };
 
+  /**
+   * Triggers the file input click to open the photo upload dialog.
+   */
   const handlePhotoUpload = () => fileInputRef.current?.click();
-  // leave handleFileChange unchanged for now unless NEXT.js route supports upload
+
+  /**
+   * Handles file selection and uploads the photo to Supabase Storage.
+   * 
+   * @param e - File input change event
+   */
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload/photo", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Upload failed");
+      }
+
+      const data = await res.json();
+      setFormData((prev) => ({ ...prev, photoUrl: data.url }));
+      toast({
+        title: "Photo uploaded! ✨",
+        description: "Your photo has been uploaded successfully.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Failed to upload photo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto text-center">
@@ -99,7 +204,6 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
               alt="Profile"
               className="w-full h-full object-cover"
               onError={(e) => {
-                // fallback if image fails to load
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
@@ -113,8 +217,9 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
-          onChange={() => {}}
+          accept="image/jpeg,image/jpg,image/png,image/webp"
+          onChange={handleFileChange}
+          disabled={isUploading}
           className="hidden"
         />
 
@@ -127,7 +232,7 @@ export const ProfileForm = ({ initialData, aboutData, onSave }: ProfileFormProps
           disabled={isUploading}
         >
           <Camera className="w-4 h-4 mr-2" />
-          Upload Photo
+          {isUploading ? "Uploading..." : "Upload Photo"}
         </Button>
       </div>
 

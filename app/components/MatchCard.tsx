@@ -1,7 +1,15 @@
+/**
+ * Match card component for displaying matched user information.
+ * Shows match details with actions to start a chat or unmatch.
+ */
+
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, User, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/**
+ * Props for the MatchCard component.
+ */
 interface MatchCardProps {
   id: string;
   name: string;
@@ -13,6 +21,26 @@ interface MatchCardProps {
   onUnmatch?: (id: string, name: string) => void;
 }
 
+/**
+ * Card component displaying a matched user's information.
+ * 
+ * @param props - Component props
+ * @param props.id - Unique identifier for the match
+ * @param props.name - Name of the matched user
+ * @param props.age - Age of the matched user
+ * @param props.bio - Bio text of the matched user
+ * @param props.photoUrl - Optional profile photo URL
+ * @param props.matchedAt - Formatted date string of when the match occurred
+ * @param props.onChatClick - Callback function called when chat button is clicked
+ * @param props.onUnmatch - Optional callback function called when unmatch button is clicked
+ * 
+ * Features:
+ * - Displays user photo or placeholder icon
+ * - Shows truncated bio (2 lines)
+ * - Chat button to start conversation
+ * - Optional unmatch button
+ * - Hover effects and animations
+ */
 export const MatchCard = ({
   id,
   name,

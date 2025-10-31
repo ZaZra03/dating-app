@@ -1,11 +1,33 @@
+/**
+ * Chat bubble component for displaying styled chat messages.
+ * Provides visual distinction between own messages and received messages.
+ */
+
 import { cn } from "@/lib/utils";
 
+/**
+ * Props for the ChatBubble component.
+ */
 interface ChatBubbleProps {
   message: string;
   isOwn: boolean;
   timestamp: string;
 }
 
+/**
+ * Styled chat bubble component.
+ * 
+ * @param props - Component props
+ * @param props.message - The message text to display
+ * @param props.isOwn - Whether this is the current user's message
+ * @param props.timestamp - Timestamp string to display below the message
+ * 
+ * Features:
+ * - Gradient styling for own messages
+ * - Card styling for received messages
+ * - Timestamp display
+ * - Responsive width (max 75% of container)
+ */
 export const ChatBubble = ({ message, isOwn, timestamp }: ChatBubbleProps) => {
   return (
     <div className={cn("flex w-full mb-4", isOwn ? "justify-end" : "justify-start")}>

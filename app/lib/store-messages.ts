@@ -1,3 +1,10 @@
+/**
+ * Utility functions for storing chat messages to the backend.
+ */
+
+/**
+ * Chat message data transfer object format.
+ */
 export interface ChatMessageDTO {
   id?: string;
   content: string;
@@ -5,6 +12,23 @@ export interface ChatMessageDTO {
   user?: { name?: string };
 }
 
+/**
+ * Stores chat messages to the backend database.
+ * 
+ * @param matchId - The match ID associated with the chat session
+ * @param messages - Array of chat messages to store
+ * @returns Promise resolving to the API response
+ * @throws Error if the request fails or messages array is required
+ * 
+ * Side effects:
+ * - Sends POST request to /api/chat/messages
+ * - Uses JWT token from localStorage for authentication
+ * 
+ * @example
+ * await storeMessages(123, [
+ *   { content: "Hello!", user: { name: "Alice" }, createdAt: "2024-01-01T00:00:00Z" }
+ * ]);
+ */
 export async function storeMessages(matchId: number, messages: ChatMessageDTO[]) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetch("/api/chat/messages", {
