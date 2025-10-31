@@ -21,27 +21,37 @@ const Discover = () => {
   const [ageRange, setAgeRange] = useState([18]);
   const [distance, setDistance] = useState([50]);
   const [generalIndex, setGeneralIndex] = useState(1);
+  const [isFilteredOut, setIsFilteredOut] = useState(false);
   const controls = useAnimation();
 
   const fetchNextProfile = async () => {
     setPending(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("/api/swipe/next", {
+      const minAge = ageRange[0] ?? 18;
+      const maxAge = 60; // slider max
+      const res = await fetch(`/api/swipe/next?ageMin=${minAge}&ageMax=${maxAge}`, {
         method: "GET",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await res.json();
       if (data?.done) {
         setCurrentProfile(null);
+        // Check if this is due to filtering or truly no more profiles
+        // A filter is active if the minimum age is above the default (18)
+        const currentMinAge = ageRange[0] ?? 18;
+        const isFiltered = currentMinAge > 18;
         setDone(true);
+        setIsFilteredOut(isFiltered);
       } else {
         setCurrentProfile(data);
+        setIsFilteredOut(false);
         setDone(false);
       }
     } catch {
       setCurrentProfile(null);
       setDone(true);
+      setIsFilteredOut(true); // Assume filtered if error
     } finally {
       setPending(false);
     }
@@ -51,6 +61,12 @@ const Discover = () => {
     fetchNextProfile();
     // eslint-disable-next-line
   }, []);
+
+  // Refetch when age filter changes
+  useEffect(() => {
+    fetchNextProfile();
+    // eslint-disable-next-line
+  }, [ageRange]);
 
   const swipeAndAnimate = async (liked: boolean, velocity = 800) => {
     if (!currentProfile || pending) return;
@@ -141,20 +157,77 @@ const Discover = () => {
 
   if (done || !currentProfile) {
     return (
-      <div className="flex flex-col h-full items-center justify-center px-6">
-        <div className="text-center space-y-6">
-          <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto shadow-md">
-            <Sparkles className="w-10 h-10 text-primary-foreground" />
+      <div className="flex flex-col h-full">
+        {/* Filters - Always show when filtering (desktop and mobile) */}
+        <div className="px-6 py-6 border-b border-border bg-background/80 backdrop-blur-sm">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              {/* Age Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground/80">
+                  Age Range
+                </Label>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{ageRange[0]}</span>
+                </div>
+                <Slider
+                  min={18}
+                  max={60}
+                  step={1}
+                  value={ageRange}
+                  onValueChange={setAgeRange}
+                />
+              </div>
+              {/* Distance Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground/80">
+                  Distance
+                </Label>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>0 km</span>
+                  <span>{distance[0]} km</span>
+                </div>
+                <Slider
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={distance}
+                  onValueChange={setDistance}
+                />
+              </div>
+            </div>
           </div>
-          <h2 className="text-3xl font-semibold">No more profiles</h2>
-          <p className="text-muted-foreground">
-            Check back later for new connections!
-          </p>
-          <Button
-            onClick={() => router.push("/matches")}
-            className="bg-primary hover:bg-primary/90">
-            View Matches
-          </Button>
+        </div>
+
+        {/* No Results Content */}
+        <div className="flex flex-col h-full items-center justify-center px-6">
+          <div className="text-center space-y-6">
+            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto shadow-md">
+              <Sparkles className="w-10 h-10 text-primary-foreground" />
+            </div>
+            <h2 className="text-3xl font-semibold">
+              {isFilteredOut ? "No profiles match your filter" : "No more profiles"}
+            </h2>
+            <p className="text-muted-foreground">
+              {isFilteredOut
+                ? "Try adjusting your age filter to see more profiles."
+                : "Check back later for new connections!"}
+            </p>
+            <div className="flex gap-3 justify-center">
+              {isFilteredOut && (
+                <Button
+                  onClick={() => setAgeRange([18])}
+                  className="bg-primary hover:bg-primary/90">
+                  Reset Filter
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push("/matches")}
+                className="bg-primary hover:bg-primary/90">
+                View Matches
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );

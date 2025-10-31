@@ -21,6 +21,11 @@ export async function GET(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+  const { searchParams } = new URL(req.url);
+  const ageMinParam = searchParams.get('ageMin');
+  const ageMaxParam = searchParams.get('ageMax');
+  const ageMin = ageMinParam ? Number(ageMinParam) : undefined;
+  const ageMax = ageMaxParam ? Number(ageMaxParam) : undefined;
   // Find already swiped user IDs
   const swiped: Array<{ toId: number }> = await prisma.swipe.findMany({
     where: { fromId: userId },
@@ -28,9 +33,25 @@ export async function GET(req: NextRequest) {
   });
   const excludeIds = [userId, ...swiped.map((s) => s.toId)];
 
-  // Fetch next available profile
+  // Build age filter
+  const ageFilter: any = {};
+  if (typeof ageMin === 'number' && Number.isFinite(ageMin)) {
+    ageFilter.gte = ageMin;
+  }
+  if (typeof ageMax === 'number' && Number.isFinite(ageMax)) {
+    ageFilter.lte = ageMax;
+  }
+
+  // Fetch next available profile with optional age filter
+  const whereClause: any = { id: { notIn: excludeIds } };
+  if (ageFilter.gte !== undefined || ageFilter.lte !== undefined) {
+    whereClause.AND = [
+      { age: ageFilter },
+    ];
+  }
+
   const nextUser = await prisma.user.findFirst({
-    where: { id: { notIn: excludeIds } },
+    where: whereClause,
     select: {
       id: true,
       name: true,

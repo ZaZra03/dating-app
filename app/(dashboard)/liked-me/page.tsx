@@ -87,16 +87,16 @@ const LikedMe = () => {
             )}
           </div>
           {!loading && likedMe.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-muted-foreground text-lg mb-6">
+            <div className="text-center">
+              <p className="text-muted-foreground text-lg">
                 No likes yet. Start swiping and let the sparks fly! ✨
               </p>
-              <Button
+              {/* <Button
                 onClick={() => router.push("/discover")}
                 className="bg-primary hover:bg-primary/90"
               >
                 Discover Matches
-              </Button>
+              </Button> */}
             </div>
           ) : (
             <div className="space-y-4">

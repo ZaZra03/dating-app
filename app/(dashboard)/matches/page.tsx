@@ -33,6 +33,13 @@ const Matches = () => {
   }, []);
 
   const handleChatClick = (matchId: string) => {
+    // Mark that we arrived via Matches and remember the matchId
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('openedFrom', 'matches');
+        localStorage.setItem('currentMatchId', String(matchId));
+      }
+    } catch {}
     // Navigate to chat with specific match
     router.push(`/chat?matchId=${matchId}`);
   };
@@ -61,7 +68,7 @@ const Matches = () => {
                 {matches.length} sparks found! 🔥
               </p>
             )}
-            <div className="mt-12 text-center">
+            {/* <div className="mt-12 text-center">
               <Button
                 size="lg"
                 variant="outline"
@@ -71,20 +78,20 @@ const Matches = () => {
                 <Sparkles className="w-5 h-5 mr-2" />
                 Find Another Match
               </Button>
-            </div>
+            </div> */}
           </div>
 
           {!loading && matches.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-muted-foreground text-lg mb-6">
+            <div className="text-center">
+              <p className="text-muted-foreground text-lg">
                 No matches yet. Start chatting to find your spark! ✨
               </p>
-              <Button
+              {/* <Button
                 onClick={() => router.push("/find-match")}
                 className="bg-primary hover:bg-primary/90"
               >
                 Find a Match
-              </Button>
+              </Button> */}
             </div>
           ) : (
             <div className="space-y-4">

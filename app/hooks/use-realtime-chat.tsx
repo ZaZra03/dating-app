@@ -30,7 +30,14 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
 
     newChannel
       .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
-        setMessages((current) => [...current, payload.payload as ChatMessage])
+        const incoming = payload.payload as ChatMessage
+        setMessages((current) => [...current, incoming])
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('latestChatMessageAt', incoming.createdAt || new Date().toISOString())
+            localStorage.setItem('latestChatFrom', incoming?.user?.name || 'Unknown')
+          }
+        } catch {}
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
